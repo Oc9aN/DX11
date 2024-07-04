@@ -45,6 +45,8 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 
 	// Store the vsync setting.
 	m_vsync_enabled = vsync;
+
+	//모니터와 비디오 카드에 적합한 새로고침 빈도를 구하기위해 해당 정보를 구함. 모니터의 해상도와 디스플레이 형식 등을 고려함
 	// Create a DirectX graphics interface factory.
 	result = CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&factory);
 	if (FAILED(result))
@@ -100,22 +102,26 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 			}
 		}
 	}
-	// Get the adapter (video card) description.
+
+
+	// Get the adapter (video card) description. 비디오 카드 정보 가져오기
 	result = adapter->GetDesc(&adapterDesc);
 	if (FAILED(result))
 	{
 		return false;
 	}
 
-	// Store the dedicated video card memory in megabytes.
+	// Store the dedicated video card memory in megabytes. 비디오 카드 메모리 용량 계산
 	m_videoCardMemory = (int)(adapterDesc.DedicatedVideoMemory / 1024 / 1024);
 
-	// Convert the name of the video card to a character array and store it.
+	// Convert the name of the video card to a character array and store it. 비디오 카드 이름 저장
 	error = wcstombs_s(&stringLength, m_videoCardDescription, 128, adapterDesc.Description, 128);
 	if (error != 0)
 	{
 		return false;
 	}
+
+	// 필요한 정보를 구했으므로 해당 구조와 인터페이스를 해제
 	// Release the display mode list.
 	delete[] displayModeList;
 	displayModeList = 0;
