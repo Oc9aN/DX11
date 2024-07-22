@@ -36,6 +36,7 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
     // Sample the pixel color from the texture using the sampler at this texture coordinate location.
     textureColor = shaderTexture.Sample(SampleType, input.tex);
 
+    // 디퓨즈 값 계산. 빛의 방향을 반대로해서 픽셀의 노말값과 점곱 -> 두 벡터의 크기가 1이므로 cos값으로 나옴 cos값을 0~1의 범위에서 사용
     // Invert the light direction for calculations.
     lightDir = -lightDirection;
 

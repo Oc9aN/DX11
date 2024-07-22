@@ -50,9 +50,11 @@ PixelInputType LightVertexShader(VertexInputType input)
     // Store the texture coordinates for the pixel shader.
     output.tex = input.tex;
     // Calculate the normal vector against the world matrix only.
+    // 노말 벡터를 월드 행렬과 계산
     output.normal = mul(input.normal, (float3x3)worldMatrix);
 	
     // Normalize the normal vector.
+    // 계산 후 혹시 크기가 변했을 수도 있기때문에 노말라이즈 
     output.normal = normalize(output.normal);
 
     return output;
