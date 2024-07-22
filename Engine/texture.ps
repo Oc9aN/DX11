@@ -1,0 +1,30 @@
+/////////////
+// GLOBALS //
+/////////////
+Texture2D shaderTexture : register(t0); // 텍스쳐 리소스
+// 픽셀이 폴리곤에 적용되는 방식을 수정 ex) 폴리곤이 멀리 떨어져있어 표현할 픽셀이 적은경우 어떤 픽셀이 그려질지 설정
+SamplerState SampleType : register(s0);
+
+//////////////
+// TYPEDEFS //
+//////////////
+struct PixelInputType
+{
+    float4 position : SV_POSITION;
+    float2 tex : TEXCOORD0; // 텍스쳐 좌표
+};
+
+////////////////////////////////////////////////////////////////////////////////
+// Pixel Shader
+////////////////////////////////////////////////////////////////////////////////
+// 텍스쳐 좌표를 사용해 폴리곤 면에서 텍스쳐 UV값에 대한 픽셀 값을 결정하고 반환
+float4 TexturePixelShader(PixelInputType input) : SV_TARGET
+{
+    float4 textureColor;
+
+
+    // Sample the pixel color from the texture using the sampler at this texture coordinate location.
+    textureColor = shaderTexture.Sample(SampleType, input.tex);
+
+    return textureColor;
+}
