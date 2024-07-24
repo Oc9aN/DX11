@@ -5,6 +5,8 @@ ModelClass::ModelClass()
 	m_vertexBuffer = 0;
 	m_indexBuffer = 0;
 	m_Texture = 0;
+	m_model = 0;
+	m_obj = 0;
 }
 
 
@@ -17,10 +19,16 @@ ModelClass::~ModelClass()
 {
 }
 
-bool ModelClass::Initialize(ID3D11Device* device, ID3D11DeviceContext* deviceContext, char* textureFilename)
+bool ModelClass::Initialize(ID3D11Device* device, ID3D11DeviceContext* deviceContext, char* textureFilename, char* modelFilename)
 {
 	bool result;
 
+	// 모델 불러오기
+	result = LoadModel(modelFilename);
+	if (!result)
+	{
+		return false;
+	}
 
 	// Initialize the vertex and index buffers.
 	result = InitializeBuffers(device);
@@ -40,6 +48,8 @@ bool ModelClass::Initialize(ID3D11Device* device, ID3D11DeviceContext* deviceCon
 
 void ModelClass::Shutdown()
 {
+	// 모델 해제
+	ReleaseModel();
 	// Release the model texture.
 	ReleaseTexture();
 	// Shutdown the vertex and index buffers.
@@ -76,59 +86,21 @@ bool ModelClass::InitializeBuffers(ID3D11Device* device)
 	D3D11_SUBRESOURCE_DATA vertexData, indexData;
 	HRESULT result;
 
-	// Set the number of vertices in the vertex array.
-	m_vertexCount = 6;
-
-	// Set the number of indices in the index array.
-	m_indexCount = 6;
-
 	// Create the vertex array.
 	// 버퍼를 채우기 위한 임시 버퍼
 	vertices = new VertexType[m_vertexCount];
-	if (!vertices)
-	{
-		return false;
-	}
 
 	// Create the index array.
 	indices = new unsigned long[m_indexCount];
-	if (!indices)
+
+	for (int i = 0; i < m_vertexCount; i++)
 	{
-		return false;
+		vertices[i].position = XMFLOAT3(m_model[i].x, m_model[i].y, m_model[i].z);
+		vertices[i].texture = XMFLOAT2(m_model[i].tu, m_model[i].tv);
+		vertices[i].normal = XMFLOAT3(m_model[i].nx, m_model[i].ny, m_model[i].nz);
+
+		indices[i] = i;
 	}
-
-	// Load the vertex array with data.
-	vertices[0].position = XMFLOAT3(-1.0f, -1.0f, 0.0f);  // Bottom left.
-	vertices[0].texture = XMFLOAT2(0.0f, 1.0f);
-	vertices[0].normal = XMFLOAT3(0.0f, 0.0f, -1.0f);
-
-	vertices[1].position = XMFLOAT3(-1.0f, 1.0f, 0.0f);  // Top left
-	vertices[1].texture = XMFLOAT2(0.0f, 0.0f);
-	vertices[1].normal = XMFLOAT3(0.0f, 0.0f, -1.0f);
-
-	vertices[2].position = XMFLOAT3(1.0f, -1.0f, 0.0f);  // Bottom right.
-	vertices[2].texture = XMFLOAT2(1.0f, 1.0f);
-	vertices[2].normal = XMFLOAT3(0.0f, 0.0f, -1.0f);
-
-	vertices[3].position = XMFLOAT3(-1.0f, 1.0f, 0.0f);  // Top left
-	vertices[3].texture = XMFLOAT2(0.0f, 0.0f);
-	vertices[3].normal = XMFLOAT3(0.0f, 0.0f, -1.0f);
-
-	vertices[4].position = XMFLOAT3(1.0f, 1.0f, 0.0f);  // Top right
-	vertices[4].texture = XMFLOAT2(1.0f, 0.0f);
-	vertices[4].normal = XMFLOAT3(0.0f, 0.0f, -1.0f);
-
-	vertices[5].position = XMFLOAT3(1.0f, -1.0f, 0.0f);  // Bottom right.
-	vertices[5].texture = XMFLOAT2(1.0f, 1.0f);
-	vertices[5].normal = XMFLOAT3(0.0f, 0.0f, -1.0f);
-
-	// Load the index array with data.
-	indices[0] = 0;  // Bottom left.
-	indices[1] = 1;  // Top middle.
-	indices[2] = 2;  // Bottom right.
-	indices[3] = 3;  // Bottom left.
-	indices[4] = 4;  // Top middle.
-	indices[5] = 5;  // Bottom right.
 
 	// Set up the description of the static vertex buffer.
 	// 정점 버퍼 설정
@@ -235,6 +207,214 @@ void ModelClass::ReleaseTexture()
 
 	return;
 }
+
+bool ModelClass::LoadModel(char* filename)
+{
+	bool result;
+	char* type;
+
+	// 타입 추정 후 모델 불러오기
+	type = GetModelType(filename);
+
+	if (strcmp(type, ".txt") == 0)
+	{
+		result = ParsingTxtModel(filename);
+	}
+	else if (strcmp(type, ".obj") == 0)
+	{
+		result = ParsingObjModel(filename);
+	}
+
+	return result;
+}
+
+bool ModelClass::ParsingTxtModel(char* filename)
+{
+	ifstream fin;
+	char input;
+	int i;
+
+	// Open the model file.
+	fin.open(filename);
+
+	// If it could not open the file then exit.
+	if (fin.fail())
+	{
+		return false;
+	}
+
+	// Read up to the value of vertex count.
+	fin.get(input);
+	while (input != ':')
+	{
+		fin.get(input);
+	}
+
+	// Read in the vertex count.
+	fin >> m_vertexCount;
+
+	// Set the number of indices to be the same as the vertex count.
+	m_indexCount = m_vertexCount;
+
+	// Create the model using the vertex count that was read in.
+	m_model = new ModelType[m_vertexCount];
+
+	// Read up to the beginning of the data.
+	fin.get(input);
+	while (input != ':')
+	{
+		fin.get(input);
+	}
+	fin.get(input);
+	fin.get(input);
+
+	// Read in the vertex data.
+	for (i = 0; i < m_vertexCount; i++)
+	{
+		fin >> m_model[i].x >> m_model[i].y >> m_model[i].z;
+		fin >> m_model[i].tu >> m_model[i].tv;
+		fin >> m_model[i].nx >> m_model[i].ny >> m_model[i].nz;
+	}
+
+	// Close the model file.
+	fin.close();
+
+	return true;
+}
+
+bool ModelClass::ParsingObjModel(char* filename)
+{
+	ifstream fin;
+	string line;
+	XMFLOAT3 vertex;
+	XMFLOAT2 uv;
+	XMFLOAT3 nomal;
+	float vi[4] = {-1,}, ti[4] = { -1, }, ni[4] = { -1, };
+	string type;
+
+	// Open the model file.
+	fin.open(filename);
+
+	// If it could not open the file then exit.
+	if (fin.fail())
+	{
+		return false;
+	}
+
+	m_obj = new ObjType();
+
+	// 데이터 읽어오기
+	while (std::getline(fin, line))
+	{
+		if (!line.empty())
+		{
+			stringstream stream(line);
+			stream >> type;
+			if (type == "v")
+			{
+				stream >> vertex.x >> vertex.y >> vertex.z;
+				m_obj->vertex.push_back(vertex);
+			}
+			else if (type == "vt")
+			{
+				stream >> uv.x >> uv.y;
+				m_obj->uv.push_back(uv);
+			}
+			else if (type == "vn")
+			{
+				stream >> nomal.x >> nomal.y >> nomal.z;
+				m_obj->nomal.push_back(nomal);
+			}
+			else if (type == "f")
+			{
+				//'/'를 공백으로 전환해서 데이터 대입
+				string value;
+				stringstream parse;
+				while (getline(stream, value, '/'))
+				{
+					parse << value << " ";
+				}
+				parse >> vi[0] >> ti[0] >> ni[0]
+					>> vi[1] >> ti[1] >> ni[1]
+					>> vi[2] >> ti[2] >> ni[2]
+					>> vi[3] >> ti[3] >> ni[3];
+				m_obj->vertexIndex.push_back(vi[0]);
+				m_obj->vertexIndex.push_back(vi[1]);
+				m_obj->vertexIndex.push_back(vi[2]);
+				m_obj->uvIndex.push_back(ti[0]);
+				m_obj->uvIndex.push_back(ti[1]);
+				m_obj->uvIndex.push_back(ti[2]);
+				m_obj->nomalIndex.push_back(ni[0]);
+				m_obj->nomalIndex.push_back(ni[1]);
+				m_obj->nomalIndex.push_back(ni[2]);
+				if (vi[3] != -1)
+				{
+					m_obj->vertexIndex.push_back(vi[0]);
+					m_obj->vertexIndex.push_back(vi[2]);
+					m_obj->vertexIndex.push_back(vi[3]);
+					m_obj->uvIndex.push_back(ti[0]);
+					m_obj->uvIndex.push_back(ti[2]);
+					m_obj->uvIndex.push_back(ti[3]);
+					m_obj->nomalIndex.push_back(ni[0]);
+					m_obj->nomalIndex.push_back(ni[2]);
+					m_obj->nomalIndex.push_back(ni[3]);
+				}
+			}
+		}
+	}
+
+	// Close the model file.
+	fin.close();
+
+	// 모델 타입에 정보 대입
+	m_vertexCount = m_obj->vertexIndex.size();
+	m_indexCount = m_vertexCount;
+
+	// 모델 타입 초기화
+	m_model = new ModelType[m_vertexCount];
+
+	for (int i = 0; i < m_indexCount; i++)
+	{
+		UINT vertexIndex = m_obj->vertexIndex[i] - 1;
+		UINT uvIndex = m_obj->uvIndex[i] - 1;
+		UINT nomalIndex = m_obj->nomalIndex[i] - 1;
+
+		m_model[i].x = m_obj->vertex[vertexIndex].x;
+		m_model[i].y = m_obj->vertex[vertexIndex].y;
+		m_model[i].z = m_obj->vertex[vertexIndex].z;
+
+		m_model[i].tu = m_obj->uv[uvIndex].x;
+		m_model[i].tv = m_obj->uv[uvIndex].y;
+
+		m_model[i].nx = m_obj->nomal[nomalIndex].x;
+		m_model[i].ny = m_obj->nomal[nomalIndex].y;
+		m_model[i].nz = m_obj->nomal[nomalIndex].z;
+	}
+
+	return true;
+}
+
+char* ModelClass::GetModelType(char* filename)
+{
+	//.을 기준으로 모델의 타입을 추정
+	char type[6];
+	char* fin;
+	fin = strrchr(filename, '.');
+	strcpy_s(type, fin);
+	return type;
+}
+
+void ModelClass::ReleaseModel()
+{
+	if (m_model)
+	{
+		delete[] m_model;
+		m_model = 0;
+	}
+
+	return;
+}
+
 
 void ModelClass::RenderBuffers(ID3D11DeviceContext* deviceContext)
 {

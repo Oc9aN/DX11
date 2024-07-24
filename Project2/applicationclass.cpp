@@ -27,6 +27,7 @@ ApplicationClass::~ApplicationClass()
 
 bool ApplicationClass::Initialize(int screenWidth, int screenHeight, HWND hwnd)
 {
+	char modelFilename[128];
 	char textureFilename[128];
 	bool result;
 
@@ -43,14 +44,17 @@ bool ApplicationClass::Initialize(int screenWidth, int screenHeight, HWND hwnd)
 	m_Camera = new CameraClass;
 
 	// Set the initial position of the camera.
-	m_Camera->SetPosition(0.0f, 0.0f, -5.0f);
+	m_Camera->SetPosition(0.0f, 0.0f, -100.0f);
+
+	// 모델 데이터 읽어오기
+	strcpy_s(modelFilename, "../Engine/data/OBJ_Table.obj");
 
 	// Create and initialize the model object.
 	m_Model = new ModelClass;
 
 	// Set the name of the texture file that we will be loading.
 	strcpy_s(textureFilename, "../Engine/data/stone01.tga");
-	result = m_Model->Initialize(m_Direct3D->GetDevice(), m_Direct3D->GetDeviceContext(), textureFilename);
+	result = m_Model->Initialize(m_Direct3D->GetDevice(), m_Direct3D->GetDeviceContext(), textureFilename, modelFilename);
 	if (!result)
 	{
 		MessageBox(hwnd, L"Could not initialize the model object.", L"Error", MB_OK);
@@ -71,7 +75,7 @@ bool ApplicationClass::Initialize(int screenWidth, int screenHeight, HWND hwnd)
 	m_Light = new LightClass;
 
 	// 빛의 색과 방향을 설정
-	m_Light->SetDiffuseColor(0.0f, 1.0f, 0.0f, 1.0f);
+	m_Light->SetDiffuseColor(1.0f, 1.0f, 1.0f, 1.0f);
 	m_Light->SetDirection(0.0f, 0.0f, 1.0f);
 
 	return true;
@@ -126,7 +130,7 @@ bool ApplicationClass::Frame()
 	bool result;
 
 	// Update the rotation variable each frame.
-	rotation -= 0.0174532925f * 0.1f;
+	rotation -= 0.0174532925f * 0.3f;
 	if (rotation < 0.0f)
 	{
 		rotation += 360.0f;
@@ -160,7 +164,7 @@ bool ApplicationClass::Render(float rotation)
 	m_Direct3D->GetProjectionMatrix(projectionMatrix);
 
 	// Rotate the world matrix by the rotation value so that the triangle will spin.
-	worldMatrix = DirectX::XMMatrixRotationY(rotation);
+	worldMatrix = DirectX::XMMatrixRotationX(rotation);
 
 	// Put the model vertex and index buffers on the graphics pipeline to prepare them for drawing.
 	m_Model->Render(m_Direct3D->GetDeviceContext());
