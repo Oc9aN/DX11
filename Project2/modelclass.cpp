@@ -327,7 +327,7 @@ bool ModelClass::ParsingObjModel(char* filename)
 			}
 			else if (type == "f")
 			{
-				//'/'를 공백으로 전환해서 데이터 대입
+				//'/'을 공백으로 전환해서 데이터 대입
 				string value;
 				stringstream parse;
 				while (getline(stream, value, '/'))
@@ -347,6 +347,8 @@ bool ModelClass::ParsingObjModel(char* filename)
 				m_obj->nomalIndex.push_back(ni[0]);
 				m_obj->nomalIndex.push_back(ni[1]);
 				m_obj->nomalIndex.push_back(ni[2]);
+				// 인덱스 형식이 trianglelist가 아닌 trianglefan일 경우, 즉 f에 관한 데이터가 4개인 경우
+				// fan을 list형식으로 인덱스 순서를 추가해줌
 				if (vi[3] != -1)
 				{
 					m_obj->vertexIndex.push_back(vi[0]);

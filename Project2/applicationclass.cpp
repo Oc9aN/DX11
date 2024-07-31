@@ -44,10 +44,10 @@ bool ApplicationClass::Initialize(int screenWidth, int screenHeight, HWND hwnd)
 	m_Camera = new CameraClass;
 
 	// Set the initial position of the camera.
-	m_Camera->SetPosition(0.0f, 0.0f, -100.0f);
+	m_Camera->SetPosition(0.0f, 0.0f, -10.0f);
 
 	// 모델 데이터 읽어오기
-	strcpy_s(modelFilename, "../Engine/data/OBJ_Table.obj");
+	strcpy_s(modelFilename, "../Engine/data/sphere.txt");
 
 	// Create and initialize the model object.
 	m_Model = new ModelClass;
@@ -75,8 +75,11 @@ bool ApplicationClass::Initialize(int screenWidth, int screenHeight, HWND hwnd)
 	m_Light = new LightClass;
 
 	// 빛의 색과 방향을 설정
+	m_Light->SetAmbientColor(0.15f, 0.15f, 0.15f, 1.0f);
 	m_Light->SetDiffuseColor(1.0f, 1.0f, 1.0f, 1.0f);
-	m_Light->SetDirection(0.0f, 0.0f, 1.0f);
+	m_Light->SetDirection(1.0f, 0.0f, 1.0f);
+	m_Light->SetSpecularColor(1.0f, 1.0f, 1.0f, 1.0f);
+	m_Light->SetSpecularPower(32.0f);
 
 	return true;
 }
@@ -148,7 +151,7 @@ bool ApplicationClass::Frame()
 
 bool ApplicationClass::Render(float rotation)
 {
-	XMMATRIX worldMatrix, viewMatrix, projectionMatrix;
+	XMMATRIX worldMatrix, viewMatrix, projectionMatrix, rotateMatrix, rotateMatrixX, translateMatrix, scaleMatrix, srMatrix, subMatrix;
 	bool result;
 
 
@@ -163,15 +166,41 @@ bool ApplicationClass::Render(float rotation)
 	m_Camera->GetViewMatrix(viewMatrix);
 	m_Direct3D->GetProjectionMatrix(projectionMatrix);
 
-	// Rotate the world matrix by the rotation value so that the triangle will spin.
-	worldMatrix = DirectX::XMMatrixRotationX(rotation);
+	rotateMatrix = XMMatrixRotationY(rotation); // 로테이션 매트릭스 생성
+	rotateMatrixX = XMMatrixRotationX(rotation);
+	translateMatrix = XMMatrixTranslation(-2.0f, 0.0f, 0.0f); // 이동 매트릭스 생성
+
+	// 두 행렬을 곱해서 이동값을 가진 행렬을 생성 후 월드 매트릭스에 대입
+	subMatrix = XMMatrixMultiply(rotateMatrixX, translateMatrix);
+	worldMatrix = XMMatrixMultiply(subMatrix, rotateMatrix);
 
 	// Put the model vertex and index buffers on the graphics pipeline to prepare them for drawing.
 	m_Model->Render(m_Direct3D->GetDeviceContext());
 
 	// Render the model using the light shader.
 	result = m_LightShader->Render(m_Direct3D->GetDeviceContext(), m_Model->GetIndexCount(), worldMatrix, viewMatrix, projectionMatrix, m_Model->GetTexture(),
-		m_Light->GetDirection(), m_Light->GetDiffuseColor());
+		m_Light->GetDirection(), m_Light->GetDiffuseColor(), m_Light->GetAmbientColor(), m_Camera->GetPosition(), m_Light->GetSpecularColor(), m_Light->GetSpecularPower());
+	if (!result)
+	{
+		return false;
+	}
+
+	scaleMatrix = XMMatrixScaling(1.0f, 0.5f, 0.5f);
+	rotateMatrix = XMMatrixRotationY(rotation);
+	rotateMatrixX = XMMatrixRotationX(-rotation);
+	translateMatrix = XMMatrixTranslation(2.0f, 0.0f, 0.0f);
+
+	// SRT행렬을 다 곱해서 월드 행렬로 바꿈
+	srMatrix = XMMatrixMultiply(scaleMatrix, rotateMatrixX);
+	subMatrix = XMMatrixMultiply(srMatrix, rotateMatrix);
+	worldMatrix = XMMatrixMultiply(translateMatrix, subMatrix);
+
+	// 모델 생성
+	m_Model->Render(m_Direct3D->GetDeviceContext());
+
+	// light shader로 랜더링
+	result = m_LightShader->Render(m_Direct3D->GetDeviceContext(), m_Model->GetIndexCount(), worldMatrix, viewMatrix, projectionMatrix, m_Model->GetTexture(),
+		m_Light->GetDirection(), m_Light->GetDiffuseColor(), m_Light->GetAmbientColor(), m_Camera->GetPosition(), m_Light->GetSpecularColor(), m_Light->GetSpecularPower());
 	if (!result)
 	{
 		return false;
