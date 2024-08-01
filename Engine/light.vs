@@ -1,7 +1,7 @@
-////////////////////////////////////////////////////////////////////////////////
-// Filename: light.vs
-////////////////////////////////////////////////////////////////////////////////
-
+/////////////
+// DEFINES //
+/////////////
+#define NUM_LIGHTS 4
 
 /////////////
 // GLOBALS //
@@ -17,6 +17,11 @@ cbuffer CameraBuffer
 {
     float3 cameraPosition;
     float padding;
+};
+
+cbuffer LightPositionBuffer
+{
+    float4 lightPosition[NUM_LIGHTS];
 };
 
 //////////////
@@ -35,6 +40,7 @@ struct PixelInputType
     float2 tex : TEXCOORD0;
     float3 normal : NORMAL;
     float3 viewDirection : TEXCOORD1;
+    float3 lightPos[NUM_LIGHTS] : TEXCOORD2;
 };
 
 
@@ -45,6 +51,7 @@ PixelInputType LightVertexShader(VertexInputType input)
 {
     PixelInputType output;
     float4 worldPosition;
+    int i;
 
     // Change the position vector to be 4 units for proper matrix calculations.
     input.position.w = 1.0f;
@@ -75,6 +82,15 @@ PixelInputType LightVertexShader(VertexInputType input)
     // Normalize the viewing direction vector.
     // 뷰어의 방향을 정규화
     output.viewDirection = normalize(output.viewDirection);
+
+    for(i=0; i<NUM_LIGHTS; i++)
+    {
+        // 월드상의 정점 위치와 빛의 위치를 비교해서 정점에서의 빛의 위치를 설정 -> 기존 ps에서 lightDir역할
+        output.lightPos[i] = lightPosition[i].xyz - worldPosition.xyz;
+
+        // 빛의 위치 벡터를 초기화
+        output.lightPos[i] = normalize(output.lightPos[i]);
+    }
 
     return output;
 }

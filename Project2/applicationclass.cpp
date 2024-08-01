@@ -11,7 +11,7 @@ ApplicationClass::ApplicationClass()
 	m_Model = 0;
 	m_TextureShader = 0;
 	m_LightShader = 0;
-	m_Light = 0;
+	m_Lights = 0;
 }
 
 
@@ -44,7 +44,7 @@ bool ApplicationClass::Initialize(int screenWidth, int screenHeight, HWND hwnd)
 	m_Camera = new CameraClass;
 
 	// Set the initial position of the camera.
-	m_Camera->SetPosition(0.0f, 0.0f, -10.0f);
+	m_Camera->SetPosition(0.0f, 0.0f, -12.0f);
 
 	// 모델 데이터 읽어오기
 	strcpy_s(modelFilename, "../Engine/data/sphere.txt");
@@ -71,15 +71,36 @@ bool ApplicationClass::Initialize(int screenWidth, int screenHeight, HWND hwnd)
 		return false;
 	}
 
-	// Create and initialize the light object.
-	m_Light = new LightClass;
+	// Set the number of lights we will use.
+	m_numLights = 4;
+
+	// Create and initialize the light objects array.
+	m_Lights = new LightClass[NUM_LIGHTS];
 
 	// 빛의 색과 방향을 설정
-	m_Light->SetAmbientColor(0.15f, 0.15f, 0.15f, 1.0f);
-	m_Light->SetDiffuseColor(1.0f, 1.0f, 1.0f, 1.0f);
-	m_Light->SetDirection(1.0f, 0.0f, 1.0f);
-	m_Light->SetSpecularColor(1.0f, 1.0f, 1.0f, 1.0f);
-	m_Light->SetSpecularPower(32.0f);
+	m_Lights[0].SetAmbientColor(0.15f, 0.0f, 0.0f, 1.0f);
+	m_Lights[0].SetDiffuseColor(1.0f, 0.0f, 0.0f, 1.0f);
+	m_Lights[0].SetSpecularColor(1.0f, 0.0f, 0.0f, 1.0f);
+	m_Lights[0].SetSpecularPower(32.0f);
+	m_Lights[0].SetPosition(-3.0f, 0.0f, -3.0f);
+
+	m_Lights[1].SetAmbientColor(0.0f, 0.15f, 0.0f, 1.0f);
+	m_Lights[1].SetDiffuseColor(0.0f, 1.0f, 0.0f, 1.0f);
+	m_Lights[1].SetSpecularColor(0.0f, 1.0f, 0.0f, 1.0f);
+	m_Lights[1].SetSpecularPower(32.0f);
+	m_Lights[1].SetPosition(3.0f, 0.0f, -3.0f);
+
+	m_Lights[2].SetAmbientColor(0.0f, 0.0f, 0.15f, 1.0f);
+	m_Lights[2].SetDiffuseColor(0.0f, 0.0f, 1.0f, 1.0f);
+	m_Lights[2].SetSpecularColor(0.0f, 0.0f, 1.0f, 1.0f);
+	m_Lights[2].SetSpecularPower(32.0f);
+	m_Lights[2].SetPosition(0.0f, 3.0f, -3.0f);
+
+	m_Lights[3].SetAmbientColor(0.15f, 0.15f, 0.15f, 1.0f);
+	m_Lights[3].SetDiffuseColor(1.0f, 1.0f, 1.0f, 1.0f);
+	m_Lights[3].SetSpecularColor(1.0f, 1.0f, 1.0f, 1.0f);
+	m_Lights[3].SetSpecularPower(32.0f);
+	m_Lights[3].SetPosition(0.0f, -3.0f, -3.0f);
 
 	return true;
 }
@@ -88,10 +109,10 @@ bool ApplicationClass::Initialize(int screenWidth, int screenHeight, HWND hwnd)
 void ApplicationClass::Shutdown()
 {
 	// Release the light object.
-	if (m_Light)
+	if (m_Lights)
 	{
-		delete m_Light;
-		m_Light = 0;
+		delete [] m_Lights;
+		m_Lights = 0;
 	}
 
 	// Release the light shader object.
@@ -151,7 +172,9 @@ bool ApplicationClass::Frame()
 
 bool ApplicationClass::Render(float rotation)
 {
-	XMMATRIX worldMatrix, viewMatrix, projectionMatrix, rotateMatrix, rotateMatrixX, translateMatrix, scaleMatrix, srMatrix, subMatrix;
+	XMMATRIX worldMatrix, viewMatrix, projectionMatrix, rotateMatrix;
+	XMFLOAT4 diffuseColor[NUM_LIGHTS], lightPosition[NUM_LIGHTS], ambientColor[NUM_LIGHTS], specularColor[NUM_LIGHTS];
+	float SpecularPower[NUM_LIGHTS];
 	bool result;
 
 
@@ -167,44 +190,40 @@ bool ApplicationClass::Render(float rotation)
 	m_Direct3D->GetProjectionMatrix(projectionMatrix);
 
 	rotateMatrix = XMMatrixRotationY(rotation); // 로테이션 매트릭스 생성
-	rotateMatrixX = XMMatrixRotationX(rotation);
-	translateMatrix = XMMatrixTranslation(-2.0f, 0.0f, 0.0f); // 이동 매트릭스 생성
 
 	// 두 행렬을 곱해서 이동값을 가진 행렬을 생성 후 월드 매트릭스에 대입
-	subMatrix = XMMatrixMultiply(rotateMatrixX, translateMatrix);
-	worldMatrix = XMMatrixMultiply(subMatrix, rotateMatrix);
+	//worldMatrix = XMMatrixMultiply(worldMatrix, rotateMatrix);
+
+	// Get the light properties.
+	for (int i = 0; i < m_numLights; i++)
+	{
+		// Create the diffuse color array from the four light colors.
+		diffuseColor[i] = m_Lights[i].GetDiffuseColor();
+
+		// Create the light position array from the four light positions.
+		lightPosition[i] = m_Lights[i].GetPosition();
+
+		// 4개 조명의 스펙큘러 컬러 배열 생성
+		specularColor[i] = m_Lights[i].GetSpecularColor();
+
+		// 4개 조명의 엠비언트 컬러 배열 생성
+		ambientColor[i] = m_Lights[i].GetAmbientColor();
+
+		// 4개 조명의 스펙큘러 파워 배열 생성
+		SpecularPower[i] = m_Lights[i].GetSpecularPower();
+	}
 
 	// Put the model vertex and index buffers on the graphics pipeline to prepare them for drawing.
 	m_Model->Render(m_Direct3D->GetDeviceContext());
 
 	// Render the model using the light shader.
 	result = m_LightShader->Render(m_Direct3D->GetDeviceContext(), m_Model->GetIndexCount(), worldMatrix, viewMatrix, projectionMatrix, m_Model->GetTexture(),
-		m_Light->GetDirection(), m_Light->GetDiffuseColor(), m_Light->GetAmbientColor(), m_Camera->GetPosition(), m_Light->GetSpecularColor(), m_Light->GetSpecularPower());
+		lightPosition, diffuseColor, ambientColor, m_Camera->GetPosition(), specularColor, SpecularPower);
 	if (!result)
 	{
 		return false;
 	}
-
-	scaleMatrix = XMMatrixScaling(1.0f, 0.5f, 0.5f);
-	rotateMatrix = XMMatrixRotationY(rotation);
-	rotateMatrixX = XMMatrixRotationX(-rotation);
-	translateMatrix = XMMatrixTranslation(2.0f, 0.0f, 0.0f);
-
-	// SRT행렬을 다 곱해서 월드 행렬로 바꿈
-	srMatrix = XMMatrixMultiply(scaleMatrix, rotateMatrixX);
-	subMatrix = XMMatrixMultiply(srMatrix, rotateMatrix);
-	worldMatrix = XMMatrixMultiply(translateMatrix, subMatrix);
-
-	// 모델 생성
-	m_Model->Render(m_Direct3D->GetDeviceContext());
-
-	// light shader로 랜더링
-	result = m_LightShader->Render(m_Direct3D->GetDeviceContext(), m_Model->GetIndexCount(), worldMatrix, viewMatrix, projectionMatrix, m_Model->GetTexture(),
-		m_Light->GetDirection(), m_Light->GetDiffuseColor(), m_Light->GetAmbientColor(), m_Camera->GetPosition(), m_Light->GetSpecularColor(), m_Light->GetSpecularPower());
-	if (!result)
-	{
-		return false;
-	}
+	
 
 	//Present the rendered scene to the screen
 	m_Direct3D->EndScene();

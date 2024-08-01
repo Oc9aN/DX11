@@ -1,16 +1,20 @@
 /////////////
+// DEFINES //
+/////////////
+#define NUM_LIGHTS 4
+
+/////////////
 // GLOBALS //
 /////////////
 Texture2D shaderTexture : register(t0);
 SamplerState SampleType : register(s0);
 
-cbuffer LightBuffer
+cbuffer LightColorBuffer
 {
-    float4 ambientColor;
-    float4 diffuseColor;
-    float3 lightDirection;
-    float specularPower;
-    float4 specularColor;
+    float4 ambientColor[NUM_LIGHTS];
+    float4 diffuseColor[NUM_LIGHTS];
+    float4 specularColor[NUM_LIGHTS];
+    float4 specularPower[NUM_LIGHTS];
 };
 
 //////////////
@@ -22,6 +26,7 @@ struct PixelInputType
     float2 tex : TEXCOORD0;
     float3 normal : NORMAL;
     float3 viewDirection : TEXCOORD1;
+    float3 lightPos[NUM_LIGHTS] : TEXCOORD2;
 };
 
 
@@ -31,51 +36,70 @@ struct PixelInputType
 float4 LightPixelShader(PixelInputType input) : SV_TARGET
 {
     float4 textureColor;
-    float3 lightDir;
-    float lightIntensity;
+    float lightIntensity[NUM_LIGHTS];
+    float4 colorArray[NUM_LIGHTS];
+    float4 colorSum;
     float4 color;
     float3 reflection;
-    float4 specular;
-
+    float4 specularArray[NUM_LIGHTS];
+    float4 specularSum;
+    float3 lightDir;
+    int i;
 
     // Sample the pixel color from the texture using the sampler at this texture coordinate location.
     textureColor = shaderTexture.Sample(SampleType, input.tex);
 
-    // Set the default output color to the ambient light value for all pixels.
-    color = ambientColor;
-    
-    // Initialize the specular color.
-    specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
-
-    // 디퓨즈 값 계산. 빛의 방향을 반대로해서 픽셀의 노말값과 점곱 -> 두 벡터의 크기가 1이므로 cos값으로 나옴 cos값을 0~1의 범위에서 사용
-    // Invert the light direction for calculations.
-    lightDir = -lightDirection;
-
-    // Calculate the amount of light on this pixel.
-    lightIntensity = saturate(dot(input.normal, lightDir));
-
-    if(lightIntensity > 0.0f)
+    // Initialize the specular color array and the specular sum.
+    for(i=0; i<NUM_LIGHTS; i++)
     {
-        // Determine the final diffuse color based on the diffuse color and the amount of light intensity.
-        color += (diffuseColor * lightIntensity);
+        specularArray[i] = float4(0.0f, 0.0f, 0.0f, 1.0f);
 
-        // Saturate the ambient and diffuse color.
-        // 주변광과 확산광이 더해지면 1이 넘을 수 잇기 때문에
-        color = saturate(color);
+        // Set the default output color to the ambient light value for all pixels.
+        colorArray[i] = ambientColor[i];
 
-        // 반사 벡터 계산
-        reflection = normalize(2.0f * lightIntensity * input.normal - lightDir);
+        // Calculate the amount of light on this pixel.
+        lightIntensity[i] = saturate(dot(input.normal, input.lightPos[i]));
 
-        // 반사 벡터, 반사강도, 시야방향으로 반사광의 양을 계산
-        // 퐁 스펙큘러 공식 = 리플렉션 벡터와 뷰 벡터를 점곱한 것의 광택계수를 승수로 한다.
-        specular = specularColor * pow(saturate(dot(reflection, input.viewDirection)), specularPower);
+        if(lightIntensity[i] > 0.0f)
+        {
+            // Determine the final diffuse color based on the diffuse color and the amount of light intensity.
+            colorArray[i] += (diffuseColor[i] * lightIntensity[i]);
+
+            // Saturate the ambient and diffuse color.
+            // 주변광과 확산광이 더해지면 1이 넘을 수 있기 때문에
+            colorArray[i] = saturate(colorArray[i]);
+
+            // Calculate the reflection vector and the specular color.
+            reflection = reflect(-input.lightPos[i], input.normal);
+            specularArray[i] = specularColor[i] * pow(saturate(dot(reflection, input.viewDirection)), specularPower[i].x);
+        }
+    }
+
+    // Initialize the sum of colors.
+    colorSum = float4(0.0f, 0.0f, 0.0f, 1.0f);
+
+    // Add all of the light colors up.
+    for(i=0; i<NUM_LIGHTS; i++)
+    {
+        colorSum.r += colorArray[i].r;
+        colorSum.g += colorArray[i].g;
+        colorSum.b += colorArray[i].b;
+    }
+
+    // Initialize the sum of specular colors.
+    specularSum = float4(0.0f, 0.0f, 0.0f, 1.0f);
+    for(i=0; i<NUM_LIGHTS; i++)
+    {
+        specularSum.r += specularArray[i].r;
+        specularSum.g += specularArray[i].g;
+        specularSum.b += specularArray[i].b;
     }
 
     // Multiply the texture pixel and the final diffuse color to get the final pixel color result.
-    color = color * textureColor;
+    color = saturate(colorSum) * textureColor;
 
-    // 마지막에 스펙큘러 값을 추가 해준다. 최종적으로 보이는 하이라이트 부분이기 때문
-    color = saturate(color + specular);
+    // Add the specular color to the final color.
+    color = saturate(color + specularSum);
 
     return color;
 }
