@@ -15,6 +15,7 @@ cbuffer LightColorBuffer
     float4 diffuseColor[NUM_LIGHTS];
     float4 specularColor[NUM_LIGHTS];
     float4 specularPower[NUM_LIGHTS];
+    float4 attenuation[NUM_LIGHTS];
 };
 
 //////////////
@@ -44,6 +45,8 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
     float4 specularArray[NUM_LIGHTS];
     float4 specularSum;
     float3 lightDir;
+    float lightDist;
+    float att;
     int i;
 
     // Sample the pixel color from the texture using the sampler at this texture coordinate location.
@@ -52,26 +55,33 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
     // Initialize the specular color array and the specular sum.
     for(i=0; i<NUM_LIGHTS; i++)
     {
+        // 초기화
+        lightDir = normalize(input.lightPos[i]);
         specularArray[i] = float4(0.0f, 0.0f, 0.0f, 1.0f);
 
         // Set the default output color to the ambient light value for all pixels.
         colorArray[i] = ambientColor[i];
 
         // Calculate the amount of light on this pixel.
-        lightIntensity[i] = saturate(dot(input.normal, input.lightPos[i]));
+        lightIntensity[i] = saturate(dot(input.normal, lightDir));
 
         if(lightIntensity[i] > 0.0f)
         {
+            // 조명과 거리 -> 빛의 감쇠 계산
+            lightDist = length(input.lightPos[i]);
+            att = attenuation[i].x +  (lightDist * attenuation[i].y) +  (pow(lightDist, 2) * attenuation[i].z);
+
             // Determine the final diffuse color based on the diffuse color and the amount of light intensity.
-            colorArray[i] += (diffuseColor[i] * lightIntensity[i]);
+            colorArray[i] += (diffuseColor[i] * lightIntensity[i]) / att;
 
             // Saturate the ambient and diffuse color.
             // 주변광과 확산광이 더해지면 1이 넘을 수 있기 때문에
             colorArray[i] = saturate(colorArray[i]);
 
             // Calculate the reflection vector and the specular color.
-            reflection = reflect(-input.lightPos[i], input.normal);
+            reflection = reflect(-lightDir, input.normal);
             specularArray[i] = specularColor[i] * pow(saturate(dot(reflection, input.viewDirection)), specularPower[i].x);
+            specularArray[i] = specularArray[i] / att;
         }
     }
 
@@ -94,6 +104,7 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
         specularSum.g += specularArray[i].g;
         specularSum.b += specularArray[i].b;
     }
+    
 
     // Multiply the texture pixel and the final diffuse color to get the final pixel color result.
     color = saturate(colorSum) * textureColor;

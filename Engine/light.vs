@@ -89,7 +89,7 @@ PixelInputType LightVertexShader(VertexInputType input)
         output.lightPos[i] = lightPosition[i].xyz - worldPosition.xyz;
 
         // 빛의 위치 벡터를 초기화
-        output.lightPos[i] = normalize(output.lightPos[i]);
+        // output.lightPos[i] = normalize(output.lightPos[i]);
     }
 
     return output;

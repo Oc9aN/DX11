@@ -52,6 +52,12 @@ void LightClass::SetPosition(float x, float y, float z)
     return;
 }
 
+void LightClass::SetAttenuation(float a0, float a1, float a2, float padding)
+{
+    m_attenuation = XMFLOAT4(a0, a1, a2, padding);
+    return;
+}
+
 XMFLOAT4 LightClass::GetAmbientColor()
 {
     return m_ambientColor;
@@ -81,4 +87,9 @@ float LightClass::GetSpecularPower()
 XMFLOAT4 LightClass::GetPosition()
 {
     return m_position;
+}
+
+XMFLOAT4 LightClass::GetAttenuation()
+{
+    return m_attenuation;
 }

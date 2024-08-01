@@ -25,6 +25,7 @@ public:
     void SetSpecularColor(float, float, float, float);
     void SetSpecularPower(float);
     void SetPosition(float, float, float);
+    void SetAttenuation(float, float, float, float = 0.0f);
 
     XMFLOAT4 GetAmbientColor();
     XMFLOAT4 GetDiffuseColor();
@@ -32,6 +33,7 @@ public:
     XMFLOAT4 GetSpecularColor();
     float GetSpecularPower();
     XMFLOAT4 GetPosition();
+    XMFLOAT4 GetAttenuation();
 
 private:
     XMFLOAT4 m_ambientColor;
@@ -40,6 +42,7 @@ private:
     XMFLOAT4 m_specularColor;
     float m_specularPower;
     XMFLOAT4 m_position;
+    XMFLOAT4 m_attenuation;
 };
 
 #endif

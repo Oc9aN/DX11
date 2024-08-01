@@ -63,13 +63,13 @@ void LightShaderClass::Shutdown()
 }
 
 bool LightShaderClass::Render(ID3D11DeviceContext* deviceContext, int indexCount, XMMATRIX worldMatrix, XMMATRIX viewMatrix, XMMATRIX projectionMatrix,
-    ID3D11ShaderResourceView* texture, XMFLOAT4 lightPosition[], XMFLOAT4 diffuseColor[], XMFLOAT4 ambientColor[], XMFLOAT3 cameraPosition, XMFLOAT4 specularColor[], float specularPower[])
+    ID3D11ShaderResourceView* texture, XMFLOAT4 lightPosition[], XMFLOAT4 diffuseColor[], XMFLOAT4 ambientColor[], XMFLOAT3 cameraPosition, XMFLOAT4 specularColor[], float specularPower[], XMFLOAT4 attenuation[])
 {
     bool result;
 
 
     // Set the shader parameters that it will use for rendering.
-    result = SetShaderParameters(deviceContext, worldMatrix, viewMatrix, projectionMatrix, texture, lightPosition, diffuseColor, ambientColor, cameraPosition, specularColor, specularPower);
+    result = SetShaderParameters(deviceContext, worldMatrix, viewMatrix, projectionMatrix, texture, lightPosition, diffuseColor, ambientColor, cameraPosition, specularColor, specularPower, attenuation);
     if (!result)
     {
         return false;
@@ -95,6 +95,7 @@ bool LightShaderClass::InitializeShader(ID3D11Device* device, HWND hwnd, WCHAR* 
     D3D11_BUFFER_DESC cameraBufferDesc;
     D3D11_BUFFER_DESC lightColorBufferDesc;
     D3D11_BUFFER_DESC lightPositionBufferDesc;
+    D3D11_BUFFER_DESC lightAttenuationBufferDesc;
 
 
     // Initialize the pointers this function will use to null.
@@ -380,7 +381,7 @@ void LightShaderClass::OutputShaderErrorMessage(ID3D10Blob* errorMessage, HWND h
 }
 
 bool LightShaderClass::SetShaderParameters(ID3D11DeviceContext* deviceContext, XMMATRIX worldMatrix, XMMATRIX viewMatrix, XMMATRIX projectionMatrix,
-    ID3D11ShaderResourceView* texture, XMFLOAT4 lightPosition[], XMFLOAT4 diffuseColor[], XMFLOAT4 ambientColor[], XMFLOAT3 cameraPosition, XMFLOAT4 specularColor[], float specularPower[])
+    ID3D11ShaderResourceView* texture, XMFLOAT4 lightPosition[], XMFLOAT4 diffuseColor[], XMFLOAT4 ambientColor[], XMFLOAT3 cameraPosition, XMFLOAT4 specularColor[], float specularPower[], XMFLOAT4 attenuation[])
 {
     HRESULT result;
     D3D11_MAPPED_SUBRESOURCE mappedResource;
@@ -488,6 +489,7 @@ bool LightShaderClass::SetShaderParameters(ID3D11DeviceContext* deviceContext, X
         dataPtr2->diffuseColor[i] = diffuseColor[i];
         dataPtr2->specularColor[i] = specularColor[i];
         dataPtr2->specularPower[i].x = specularPower[i];
+        dataPtr2->attenuation[i] = attenuation[i];
     }
     
 

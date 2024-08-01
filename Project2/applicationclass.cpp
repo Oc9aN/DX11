@@ -82,25 +82,29 @@ bool ApplicationClass::Initialize(int screenWidth, int screenHeight, HWND hwnd)
 	m_Lights[0].SetDiffuseColor(1.0f, 0.0f, 0.0f, 1.0f);
 	m_Lights[0].SetSpecularColor(1.0f, 0.0f, 0.0f, 1.0f);
 	m_Lights[0].SetSpecularPower(32.0f);
-	m_Lights[0].SetPosition(-3.0f, 0.0f, -3.0f);
+	m_Lights[0].SetPosition(-10.0f, 0.0f, -10.0f);
+	m_Lights[0].SetAttenuation(0.0f, 0.0f, 0.1f, 1.0f);
 
 	m_Lights[1].SetAmbientColor(0.0f, 0.15f, 0.0f, 1.0f);
 	m_Lights[1].SetDiffuseColor(0.0f, 1.0f, 0.0f, 1.0f);
 	m_Lights[1].SetSpecularColor(0.0f, 1.0f, 0.0f, 1.0f);
 	m_Lights[1].SetSpecularPower(32.0f);
 	m_Lights[1].SetPosition(3.0f, 0.0f, -3.0f);
+	m_Lights[1].SetAttenuation(0.0f, 0.0f, 0.1f, 1.0f);
 
 	m_Lights[2].SetAmbientColor(0.0f, 0.0f, 0.15f, 1.0f);
 	m_Lights[2].SetDiffuseColor(0.0f, 0.0f, 1.0f, 1.0f);
 	m_Lights[2].SetSpecularColor(0.0f, 0.0f, 1.0f, 1.0f);
 	m_Lights[2].SetSpecularPower(32.0f);
 	m_Lights[2].SetPosition(0.0f, 3.0f, -3.0f);
+	m_Lights[2].SetAttenuation(0.0f, 0.0f, 0.1f, 1.0f);
 
 	m_Lights[3].SetAmbientColor(0.15f, 0.15f, 0.15f, 1.0f);
 	m_Lights[3].SetDiffuseColor(1.0f, 1.0f, 1.0f, 1.0f);
 	m_Lights[3].SetSpecularColor(1.0f, 1.0f, 1.0f, 1.0f);
 	m_Lights[3].SetSpecularPower(32.0f);
 	m_Lights[3].SetPosition(0.0f, -3.0f, -3.0f);
+	m_Lights[3].SetAttenuation(0.0f, 0.0f, 0.1f, 1.0f);
 
 	return true;
 }
@@ -173,7 +177,7 @@ bool ApplicationClass::Frame()
 bool ApplicationClass::Render(float rotation)
 {
 	XMMATRIX worldMatrix, viewMatrix, projectionMatrix, rotateMatrix;
-	XMFLOAT4 diffuseColor[NUM_LIGHTS], lightPosition[NUM_LIGHTS], ambientColor[NUM_LIGHTS], specularColor[NUM_LIGHTS];
+	XMFLOAT4 diffuseColor[NUM_LIGHTS], lightPosition[NUM_LIGHTS], ambientColor[NUM_LIGHTS], specularColor[NUM_LIGHTS], attenuation[NUM_LIGHTS];
 	float SpecularPower[NUM_LIGHTS];
 	bool result;
 
@@ -211,6 +215,9 @@ bool ApplicationClass::Render(float rotation)
 
 		// 4개 조명의 스펙큘러 파워 배열 생성
 		SpecularPower[i] = m_Lights[i].GetSpecularPower();
+
+		// 4개 조명의 감쇠 계수 배열 생성
+		attenuation[i] = m_Lights[i].GetAttenuation();
 	}
 
 	// Put the model vertex and index buffers on the graphics pipeline to prepare them for drawing.
@@ -218,7 +225,7 @@ bool ApplicationClass::Render(float rotation)
 
 	// Render the model using the light shader.
 	result = m_LightShader->Render(m_Direct3D->GetDeviceContext(), m_Model->GetIndexCount(), worldMatrix, viewMatrix, projectionMatrix, m_Model->GetTexture(),
-		lightPosition, diffuseColor, ambientColor, m_Camera->GetPosition(), specularColor, SpecularPower);
+		lightPosition, diffuseColor, ambientColor, m_Camera->GetPosition(), specularColor, SpecularPower, attenuation);
 	if (!result)
 	{
 		return false;
