@@ -140,16 +140,32 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="applicationclass.cpp" />
+    <ClCompile Include="bitmapclass.cpp" />
+    <ClCompile Include="cameraclass.cpp" />
     <ClCompile Include="d3dclass.cpp" />
     <ClCompile Include="inputclass.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="spriteclass.cpp" />
     <ClCompile Include="systemclass.cpp" />
+    <ClCompile Include="textureclass.cpp" />
+    <ClCompile Include="textureshaderclass.cpp" />
+    <ClCompile Include="timerclass.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="applicationclass.h" />
+    <ClInclude Include="bitmapclass.h" />
+    <ClInclude Include="cameraclass.h" />
     <ClInclude Include="d3dclass.h" />
     <ClInclude Include="inputclass.h" />
+    <ClInclude Include="spriteclass.h" />
     <ClInclude Include="systemclass.h" />
+    <ClInclude Include="textureclass.h" />
+    <ClInclude Include="textureshaderclass.h" />
+    <ClInclude Include="timerclass.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Engine\texture.ps" />
+    <None Include="..\Engine\texture.vs" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

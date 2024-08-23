@@ -30,6 +30,24 @@
     <ClCompile Include="d3dclass.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="textureshaderclass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="textureclass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cameraclass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="bitmapclass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="spriteclass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="timerclass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="systemclass.h">
@@ -44,5 +62,27 @@
     <ClInclude Include="d3dclass.h">
       <Filter>Resource Files</Filter>
     </ClInclude>
+    <ClInclude Include="textureshaderclass.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
+    <ClInclude Include="textureclass.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cameraclass.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
+    <ClInclude Include="spriteclass.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
+    <ClInclude Include="bitmapclass.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
+    <ClInclude Include="timerclass.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Engine\texture.ps" />
+    <None Include="..\Engine\texture.vs" />
   </ItemGroup>
 </Project>
